@@ -1,0 +1,9 @@
+{
+  "name": "admin-auth-system",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Frontend + serverless API (auth bridge) Admin Auth System, deploy sebagai satu project Vercel.",
+  "dependencies": {
+    "firebase-admin": "^12.3.1"
+  }
+}
