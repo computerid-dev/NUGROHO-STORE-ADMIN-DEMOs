@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daftar Akun — Nugroho Store</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/styles/tokens.css">
+<link rel="stylesheet" href="/assets/styles/base.css">
+<link rel="stylesheet" href="/assets/styles/components.css">
+<style>
+  body { display: flex; align-items: center; min-height: 100vh; }
+  .auth-wrap { width: 100%; padding: var(--sp-5) 0; }
+  .brand-mini { text-align: center; margin-bottom: var(--sp-6); font-family: var(--font-display); font-size: var(--fs-lg); }
+  .brand-mini span { color: var(--c-warm-600); }
+  .switch-link { text-align: center; margin-top: var(--sp-4); font-size: var(--fs-sm); }
+</style>
+</head>
+<body>
+
+<div class="container auth-wrap">
+  <div class="brand-mini">Nugroho<span>Store</span> — Akun</div>
+  <div class="panel-glass form-card">
+    <h1>Buat akun baru</h1>
+    <p class="text-soft">Satu akun untuk jadi pembeli maupun penjual di Nugroho Store.</p>
+
+    <form id="form-daftar" novalidate>
+      <div class="field" id="field-email">
+        <label for="email">Email</label>
+        <input type="email" id="email" required>
+        <p class="field__error">Masukkan email yang valid.</p>
+      </div>
+      <div class="field" id="field-password">
+        <label for="password">Password</label>
+        <input type="password" id="password" minlength="6" required>
+        <p class="field__hint">Minimal 6 karakter.</p>
+        <p class="field__error">Password minimal 6 karakter.</p>
+      </div>
+      <button type="submit" class="btn btn--brut btn--full" id="btn-submit">Daftar</button>
+    </form>
+
+    <p class="switch-link">Sudah punya akun? <a id="link-masuk" href="/login.html">Masuk di sini</a></p>
+  </div>
+</div>
+
+<script type="module">
+  import { daftarAkun, pesanErrorFirebase, ambilTujuanRedirect } from "/assets/scripts/auth-client.js";
+  import { validasiTidakKosong, tampilkanToast } from "/assets/scripts/ui.js";
+  import { STORE_URL } from "/assets/scripts/firebase-config.js";
+
+  const tujuan = ambilTujuanRedirect(STORE_URL);
+  document.getElementById("link-masuk").href = `/login.html?redirect=${encodeURIComponent(tujuan)}`;
+
+  document.getElementById("form-daftar").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    let valid = true;
+    document.getElementById("field-email").classList.toggle("has-error", !validasiTidakKosong(email) && (valid = false, true));
+    document.getElementById("field-password").classList.toggle("has-error", password.length < 6 && (valid = false, true));
+    if (!valid) return;
+
+    const tombol = document.getElementById("btn-submit");
+    tombol.disabled = true;
+    tombol.textContent = "Mendaftarkan…";
+    try {
+      await daftarAkun(email, password);
+      window.location.href = `/setup-profile.html?redirect=${encodeURIComponent(tujuan)}`;
+    } catch (err) {
+      console.error(err);
+      tampilkanToast(pesanErrorFirebase(err.code), "error");
+      tombol.disabled = false;
+      tombol.textContent = "Daftar";
+    }
+  });
+</script>
+</body>
+</html>
