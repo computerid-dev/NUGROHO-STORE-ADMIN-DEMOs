@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Masuk — Nugroho Store</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/styles/tokens.css">
+<link rel="stylesheet" href="/assets/styles/base.css">
+<link rel="stylesheet" href="/assets/styles/components.css">
+<style>
+  body { display: flex; align-items: center; min-height: 100vh; }
+  .auth-wrap { width: 100%; padding: var(--sp-5) 0; }
+  .brand-mini { text-align: center; margin-bottom: var(--sp-6); font-family: var(--font-display); font-size: var(--fs-lg); }
+  .brand-mini span { color: var(--c-warm-600); }
+  .switch-link { text-align: center; margin-top: var(--sp-4); font-size: var(--fs-sm); }
+  .cs-link { text-align: center; margin-top: var(--sp-2); font-size: var(--fs-xs); }
+</style>
+</head>
+<body>
+
+<div class="container auth-wrap">
+  <div class="brand-mini">Nugroho<span>Store</span> — Akun</div>
+  <div class="panel-glass form-card">
+    <h1>Masuk ke akunmu</h1>
+
+    <form id="form-masuk" novalidate>
+      <div class="field" id="field-email">
+        <label for="email">Email</label>
+        <input type="email" id="email" required>
+        <p class="field__error">Masukkan email yang valid.</p>
+      </div>
+      <div class="field" id="field-password">
+        <label for="password">Password</label>
+        <input type="password" id="password" required>
+        <p class="field__error">Password wajib diisi.</p>
+      </div>
+      <button type="submit" class="btn btn--brut btn--full" id="btn-submit">Masuk</button>
+    </form>
+
+    <p class="switch-link">Belum punya akun? <a id="link-daftar" href="/register.html">Daftar di sini</a></p>
+    <p class="cs-link"><a id="link-cs" href="/cs-help.html">Lupa password / butuh bantuan?</a></p>
+  </div>
+</div>
+
+<script type="module">
+  import { masukAkun, profilSudahLengkap, mintaCustomTokenUntukStore, pesanErrorFirebase, ambilTujuanRedirect } from "/assets/scripts/auth-client.js";
+  import { validasiTidakKosong, tampilkanToast } from "/assets/scripts/ui.js";
+  import { STORE_URL } from "/assets/scripts/firebase-config.js";
+
+  const tujuan = ambilTujuanRedirect(STORE_URL);
+  document.getElementById("link-daftar").href = `/register.html?redirect=${encodeURIComponent(tujuan)}`;
+
+  document.getElementById("form-masuk").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+
+    let valid = true;
+    document.getElementById("field-email").classList.toggle("has-error", !validasiTidakKosong(email) && (valid = false, true));
+    document.getElementById("field-password").classList.toggle("has-error", !validasiTidakKosong(password) && (valid = false, true));
+    if (!valid) return;
+
+    const tombol = document.getElementById("btn-submit");
+    tombol.disabled = true;
+    tombol.textContent = "Memproses…";
+
+    try {
+      const user = await masukAkun(email, password);
+      const lengkap = await profilSudahLengkap(user.uid);
+      if (!lengkap) {
+        window.location.href = `/setup-profile.html?redirect=${encodeURIComponent(tujuan)}`;
+        return;
+      }
+      const customToken = await mintaCustomTokenUntukStore();
+      window.location.href = `${tujuan}${tujuan.includes("?") ? "&" : "?"}authToken=${encodeURIComponent(customToken)}`;
+    } catch (err) {
+      console.error(err);
+      tampilkanToast(pesanErrorFirebase(err.code), "error");
+      tombol.disabled = false;
+      tombol.textContent = "Masuk";
+    }
+  });
+</script>
+</body>
+</html>
