@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Customer Service — Nugroho Store</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/styles/tokens.css">
+<link rel="stylesheet" href="/assets/styles/base.css">
+<link rel="stylesheet" href="/assets/styles/components.css">
+<style>
+  .cs-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-7); padding: var(--sp-7) 0 var(--sp-9); }
+  .faq-item { padding: var(--sp-4) 0; border-bottom: 1px solid var(--c-line); }
+  .faq-item h3 { font-size: var(--fs-base); margin-bottom: 6px; }
+  @media (max-width: 860px) { .cs-wrap { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="container cs-wrap">
+  <div>
+    <h1>Butuh bantuan?</h1>
+    <p class="text-soft">Tim kami membantu urusan akun & fitur di Nugroho Store. Untuk sengketa dana, kami akan bantu memfasilitasi komunikasi — tapi keputusan akhir tetap ada di antara pembeli dan penjual.</p>
+
+    <div class="faq-item">
+      <h3>Saya sudah bayar tapi penjual belum konfirmasi</h3>
+      <p class="text-soft">Ini normal kalau belum lewat batas waktu kirim yang dijanjikan penjual. Kalau sudah lewat, laporkan lewat form di samping dan sertakan ID pesananmu.</p>
+    </div>
+    <div class="faq-item">
+      <h3>Saya lupa password</h3>
+      <p class="text-soft">Isi form di samping dengan email akunmu, tim kami akan bantu proses reset.</p>
+      </div>
+    <div class="faq-item">
+      <h3>Saya penjual, pembeli klaim sudah bayar tapi saya belum lihat dana masuk</h3>
+      <p class="text-soft">Jangan konfirmasi lunas sebelum kamu benar-benar melihat dana masuk di aplikasi pembayaranmu. Kalau ragu, hubungi kami dengan ID pesanan terkait.</p>
+    </div>
+  </div>
+
+  <div class="panel-glass">
+    <h2 class="mt-0">Kirim pesan ke CS</h2>
+    <form id="form-cs" novalidate>
+      <div class="field" id="field-email">
+        <label for="email">Email akunmu</label>
+        <input type="email" id="email" required>
+        <p class="field__error">Masukkan email yang valid.</p>
+      </div>
+      <div class="field" id="field-order">
+        <label for="orderId">ID Pesanan (opsional)</label>
+        <input type="text" id="orderId" placeholder="Kosongkan jika tidak terkait pesanan">
+      </div>
+      <div class="field" id="field-pesan">
+        <label for="pesan">Ceritakan masalahmu</label>
+        <textarea id="pesan" required></textarea>
+        <p class="field__error">Pesan wajib diisi.</p>
+      </div>
+      <button type="submit" class="btn btn--brut btn--full" id="btn-submit">Kirim ke CS</button>
+    </form>
+  </div>
+</div>
+
+<script type="module">
+  import { db } from "/assets/scripts/firebase-config.js";
+  import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+  import { validasiTidakKosong, tampilkanToast } from "/assets/scripts/ui.js";
+
+  const orderIdDariUrl = new URLSearchParams(window.location.search).get("order");
+  if (orderIdDariUrl) document.getElementById("orderId").value = orderIdDariUrl;
+
+  document.getElementById("form-cs").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("email").value;
+    const orderId = document.getElementById("orderId").value;
+    const pesan = document.getElementById("pesan").value;
+
+    let valid = true;
+    document.getElementById("field-email").classList.toggle("has-error", !validasiTidakKosong(email) && (valid = false, true));
+    document.getElementById("field-pesan").classList.toggle("has-error", !validasiTidakKosong(pesan) && (valid = false, true));
+    if (!valid) return;
+
+    const tombol = document.getElementById("btn-submit");
+    tombol.disabled = true;
+    tombol.textContent = "Mengirim…";
+    try {
+      await addDoc(collection(db, "support_tickets"), {
+        email: email.trim(),
+        orderId: orderId.trim() || null,
+        pesan: pesan.trim(),
+        status: "baru",
+        createdAt: serverTimestamp(),
+      });
+      tampilkanToast("Pesanmu terkirim, tim kami akan menghubungi via email.", "success");
+      document.getElementById("form-cs").reset();
+    } catch (err) {
+      console.error(err);
+      tampilkanToast("Gagal mengirim pesan, coba lagi.", "error");
+    } finally {
+      tombol.disabled = false;
+      tombol.textContent = "Kirim ke CS";
+    }
+  });
+</script>
+</body>
+</html>
